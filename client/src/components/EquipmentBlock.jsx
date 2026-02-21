@@ -33,7 +33,7 @@ const EquipmentBlock = ({ equipment, isLocked, onToggleLock, viewMode }) => {
           borderColor: borderColor,
           backgroundColor: camera.color + '20',
         }}
-        className="border-4 rounded-lg overflow-hidden cursor-move hover:shadow-lg transition-shadow"
+        className="border-5 rounded-lg overflow-hidden cursor-move hover:shadow-lg transition-shadow"
       >
         <div className="bg-gray-800 text-white text-center py-1 text-sm font-bold">
           Set {camera.set_id}

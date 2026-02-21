@@ -13,7 +13,7 @@ const MapView = ({ venues, equipment, onDrop, viewMode }) => {
     <div className="relative">
       {/* Background Image Layer */}
       <div 
-        className="absolute inset-0 rounded-lg border-2 border-gray-300"
+        className="absolute inset-0 rounded-lg border-2 border-gray-700"         
         style={{ 
           height: '70vh', 
           minHeight: '500px',
@@ -21,6 +21,7 @@ const MapView = ({ venues, equipment, onDrop, viewMode }) => {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
+          backgroundColor: '#1F2937',  // Add dark background color
           opacity: 0.3
         }}
       />

@@ -21,6 +21,8 @@ db.exec(`
     planned_location TEXT,
     notes TEXT,
     color TEXT NOT NULL,
+    ip_address TEXT,
+    serial_number TEXT,
     last_modified INTEGER DEFAULT (strftime('%s', 'now'))
   );
 
@@ -47,12 +49,12 @@ db.exec(`
 const venues = [
   { id: 'kyle_field', name: 'Kyle Field', x: 82, y: 25, isHome: 0 },
   { id: 'reed_arena', name: 'Reed Arena', x: 30, y: 25, isHome: 0 },
-  { id: 'engineering_garage', name: 'Engineering Garage', x: 93, y: 60, isHome: 1 },
+  { id: 'engineering_garage', name: 'Engineering Garage', x: 95, y: 60, isHome: 1 },
   { id: 'bluebell_park', name: 'Bluebell Park', x: 70, y: 50, isHome: 0 },
   { id: 'indoor_track_field', name: 'Indoor Track Field', x: 55, y: 67, isHome: 0 },
-  { id: 'outdoor_track_field', name: 'Outdoor Track Field', x: 20, y: 65, isHome: 0 },
+  { id: 'outdoor_track_field', name: 'Outdoor Track Field', x: 18, y: 65, isHome: 0 },
   { id: 'ellis_soccer_field', name: 'Ellis Soccer Field', x: 42, y: 50, isHome: 0 },
-  { id: 'davis_diamond', name: 'Davis Diamond', x: 7, y: 50, isHome: 0 }
+  { id: 'davis_diamond', name: 'Davis Diamond', x: 6, y: 50, isHome: 0 }
 ];
 
 const insertVenue = db.prepare(`

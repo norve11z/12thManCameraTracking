@@ -90,9 +90,9 @@ function App() {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="min-h-screen bg-gray-50 p-6">
-        <header className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">12th Man Productions Camera Tracker</h1>
+    <div className="min-h-screen bg-gray-900 p-6">
+      <header className="mb-6">
+        <h1 className="text-3xl font-bold text-white mb-4">12th Man Productions Camera Tracker</h1>
           <div className="flex gap-4">
             <button
               onClick={() => setViewMode('current')}

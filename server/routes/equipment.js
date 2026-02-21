@@ -31,7 +31,7 @@ router.put('/equipment/:id', (req, res) => {
   
   try {
     const { id } = req.params;
-    const { current_location, planned_location, notes } = req.body;
+    const { current_location, planned_location, notes, ip_address, serial_number } = req.body;
     
     const current = db.prepare('SELECT * FROM equipment WHERE id = ?').get(id);
     
@@ -72,6 +72,14 @@ router.put('/equipment/:id', (req, res) => {
     if (notes !== undefined) {
       updates.push('notes = ?');
       values.push(notes);
+    }
+    if (ip_address !== undefined) {
+      updates.push('ip_address = ?');
+      values.push(ip_address);
+    }
+    if (serial_number !== undefined) {
+      updates.push('serial_number = ?');
+      values.push(serial_number);
     }
     
     updates.push("last_modified = strftime('%s', 'now')");
