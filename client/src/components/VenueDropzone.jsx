@@ -3,16 +3,75 @@ import { useDrag } from 'react-dnd';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 
+const SLOTS = ['1', '2', '3', '4', '5', '6', 'other'];
 const VenueDropzone = ({ venue, equipment, onDrop, venuePositions, viewMode }) => {
+  const position = venuePositions[venue.id];
+  const isHomeBase = venue.is_home_base === 1;
+
+  // Group equipment by slot (only for non-home venues)
+  const equipmentBySlot = equipment.reduce((acc, item) => {
+    const slot = viewMode === 'current' ? item.current_slot : item.planned_slot;
+    if (!acc[slot]) acc[slot] = [];
+    acc[slot].push(item);
+    return acc;
+  }, {});
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: `${position.position_x}%`,
+        top: `${position.position_y}%`,
+        transform: 'translate(-50%, -50%)',
+        backgroundColor: '#1F2937',
+        minWidth: '11%',
+        maxWidth: '11%',
+        border: venue.is_home_base ? '2px dashed #60A5FA' : '2px solid #4B5563',
+      }}
+      className="p-2 rounded-lg shadow-lg hover:shadow-xl transition-shadow"
+    >
+      <h3 className="font-bold text-xs mb-1 text-center border-b border-gray-600 pb-1 text-gray-200">
+        {venue.name}
+      </h3>
+
+      {isHomeBase ? (
+        // NO SLOTS for Engineering Garage
+        <NoSlotDropzone 
+          venueId={venue.id}
+          equipment={equipment}
+          onDrop={onDrop}
+          viewMode={viewMode}
+        />
+      ) : (
+        // SLOTS for all other venues
+        <div className="space-y-1 mt-2">
+          {SLOTS.map(slotNum => {
+            const slotEquipment = equipmentBySlot[slotNum] || [];
+            return (
+              <SlotDropzone
+                key={slotNum}
+                venueId={venue.id}
+                slotNum={slotNum}
+                equipment={slotEquipment}
+                onDrop={onDrop}
+                viewMode={viewMode}
+              />
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SlotDropzone = ({ venueId, slotNum, equipment, onDrop, viewMode }) => {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: ['EQUIPMENT_SET', 'EQUIPMENT_PIECE'],
-    drop: (item) => onDrop(item, venue.id),
+    drop: (item) => onDrop(item, venueId, slotNum),
     collect: (monitor) => ({
       isOver: monitor.isOver(),
     }),
   }));
-
-  const position = venuePositions[venue.id];
 
   // Group equipment by set
   const equipmentSets = equipment.reduce((acc, item) => {
@@ -31,37 +90,55 @@ const VenueDropzone = ({ venue, equipment, onDrop, venuePositions, viewMode }) =
     <div
       ref={drop}
       style={{
-        position: 'absolute',
-        left: `${position.position_x}%`,
-        top: `${position.position_y}%`,
-        transform: 'translate(-50%, -50%)',
-        backgroundColor: isOver ? '#1E3A8A' : '#1F2937',
-        minWidth: '11%',
-        maxWidth: '11%',
-        border: venue.is_home_base ? '2px dashed #60A5FA' : '2px solid #4B5563',
+        backgroundColor: isOver ? '#1E3A8A' : '#374151',
+        minHeight: '30px',
       }}
-      className="p-2 rounded-lg shadow-lg hover:shadow-xl transition-shadow"
+      className="p-0.5 rounded border border-gray-600"
     >
-      <h3 className="font-bold text-xs mb-1 text-center border-b border-gray-600 pb-1 text-gray-200">
-        {venue.name}
-      </h3>
-      <div className="text-xs text-gray-400 text-center mb-2">
-        {Object.keys(equipmentSets).length} set{Object.keys(equipmentSets).length !== 1 ? 's' : ''}
+      <div className="text-[10px] text-gray-400 mb-0.5">
+        Cam Pos {slotNum === 'other' ? 'Other' : slotNum}
       </div>
-      <div 
-        className="space-y-2 scroll-smooth" 
-        style={{ 
-          maxHeight: Object.keys(equipmentSets).length > 5 ? '240px' : 'auto',
-          overflowY: Object.keys(equipmentSets).length > 5 ? 'auto' : 'visible',
-          scrollBehavior: 'smooth' 
-        }}
-        onWheel={(e) => {
-          if (Object.keys(equipmentSets).length > 5) {
-            e.currentTarget.scrollTop += e.deltaY * 0.3;
-            e.preventDefault();
-          }
-        }}
-      >
+      <div className="space-y-1">
+        {Object.values(equipmentSets).map(set => (
+          <EquipmentSetBlock key={set.setId} set={set} viewMode={viewMode} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const NoSlotDropzone = ({ venueId, equipment, onDrop, viewMode }) => {
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: ['EQUIPMENT_SET', 'EQUIPMENT_PIECE'],
+    drop: (item) => onDrop(item, venueId, 'other'),
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  }));
+
+  // Group equipment by set
+  const equipmentSets = equipment.reduce((acc, item) => {
+    if (!acc[item.set_id]) {
+      acc[item.set_id] = {
+        setId: item.set_id,
+        color: item.color,
+        pieces: []
+      };
+    }
+    acc[item.set_id].pieces.push(item);
+    return acc;
+  }, {});
+
+  return (
+    <div
+      ref={drop}
+      style={{
+        backgroundColor: isOver ? '#1E3A8A' : 'transparent',
+        minHeight: '60px',
+      }}
+      className="p-1 rounded mt-2"
+    >
+      <div className="space-y-1">
         {Object.values(equipmentSets).map(set => (
           <EquipmentSetBlock key={set.setId} set={set} viewMode={viewMode} />
         ))}
@@ -75,7 +152,7 @@ const EquipmentSetBlock = ({ set, viewMode }) => {
   const [showInfo, setShowInfo] = useState(false);
   
   const hasMismatch = viewMode === 'current' && set.pieces.some(
-    p => p.current_location !== p.planned_location
+    p => p.current_location !== p.planned_location || p.current_slot !== p.planned_slot
   );
 
   const [{ isDragging }, dragSet] = useDrag(() => ({
@@ -93,31 +170,31 @@ const EquipmentSetBlock = ({ set, viewMode }) => {
         ref={dragSet}
         style={{ 
           backgroundColor: set.color,
-          border: hasMismatch ? '5px solid #EF4444' : 'none',
-          boxShadow: hasMismatch ? '0 0 10px rgba(239, 68, 68, 0.5)' : 'none',
+          border: hasMismatch ? '3px solid #EF4444' : 'none',
+          boxShadow: hasMismatch ? '0 0 8px rgba(239, 68, 68, 0.4)' : 'none',
           opacity: isDragging ? 0.5 : 1,
           cursor: 'move',
           position: 'relative',
           zIndex: isDragging ? 1000 : 1
         }}
-        className="text-white text-base px-3 py-2 rounded-lg font-semibold text-center hover:opacity-80 transition-opacity flex justify-between items-center"
+        className="text-white text-xs px-2 py-1 rounded-lg font-semibold text-center hover:opacity-80 transition-opacity flex justify-between items-center"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
             onClick={(e) => {
               e.stopPropagation();
               setShowInfo(true);
             }}
-            className="hover:bg-white hover:bg-opacity-20 rounded-full w-5 h-5 flex items-center justify-center text-xs"
+            className="hover:bg-white hover:bg-opacity-20 rounded-full w-4 h-4 flex items-center justify-center"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100" height="100" viewBox="0 0 50 50" fill="white">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" fill="white" className="w-3 h-3">
               <path d="M 25 2 C 12.264481 2 2 12.264481 2 25 C 2 37.735519 12.264481 48 25 48 C 37.735519 48 48 37.735519 48 25 C 48 12.264481 37.735519 2 25 2 z M 25 4 C 36.664481 4 46 13.335519 46 25 C 46 36.664481 36.664481 46 25 46 C 13.335519 46 4 36.664481 4 25 C 4 13.335519 13.335519 4 25 4 z M 25 11 A 3 3 0 0 0 25 17 A 3 3 0 0 0 25 11 z M 21 21 L 21 23 L 23 23 L 23 36 L 21 36 L 21 38 L 29 38 L 29 36 L 27 36 L 27 21 L 21 21 z"></path>
             </svg>
           </button>
-          <span>Set {set.setId}</span>
+          <span className="text-[11px]">CAM {set.setId}</span>
         </div>
         <span 
-          className="text-[10px] cursor-pointer"
+          className="text-[9px] cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             setExpanded(!expanded);
@@ -127,7 +204,7 @@ const EquipmentSetBlock = ({ set, viewMode }) => {
         </span>
       </div>
 
-      {/* Info Popup - Using Portal */}
+      {/* Info Popup */}
       {showInfo && createPortal(
         <InfoPopup 
           set={set} 
@@ -137,9 +214,9 @@ const EquipmentSetBlock = ({ set, viewMode }) => {
         document.body
       )}
 
-      {/* Individual Pieces (expandable) */}
+      {/* Individual Pieces */}
       {expanded && (
-        <div className="ml-2 mt-1 space-y-1">
+        <div className="ml-1 mt-1 space-y-1">
           {set.pieces.map(piece => (
             <DraggablePiece key={piece.id} piece={piece} color={set.color} viewMode={viewMode} />
           ))}
@@ -182,13 +259,11 @@ const InfoPopup = ({ set, onClose, viewMode }) => {
 
   return (
     <>
-      {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
         onClick={onClose}
       />
       
-      {/* Popup */}
       <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-800 border-2 border-gray-600 rounded-lg p-4 z-[9999] w-80">
         <div className="flex justify-between items-center mb-3">
           <h2 className="text-xl font-bold text-white">Camera Set {set.setId}</h2>
@@ -201,7 +276,6 @@ const InfoPopup = ({ set, onClose, viewMode }) => {
         </div>
 
         {isEditable ? (
-          // EDITABLE VIEW (Planned Mode)
           <>
             <div className="bg-gray-700 p-3 rounded-lg space-y-2">
               <div>
@@ -254,7 +328,6 @@ const InfoPopup = ({ set, onClose, viewMode }) => {
             </div>
           </>
         ) : (
-          // READ-ONLY VIEW (Current Mode)
           <>
             <div className="bg-gray-700 p-3 rounded-lg">
               <div className="space-y-2 text-sm">
@@ -276,11 +349,11 @@ const InfoPopup = ({ set, onClose, viewMode }) => {
                 <div className="border-t border-gray-600 pt-2 mt-2">
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-400">Current:</span>
-                    <span className="text-white">{set.pieces[0].current_location}</span>
+                    <span className="text-white">{set.pieces[0].current_location} / Cam Pos {set.pieces[0].current_slot}</span>
                   </div>
                   <div className="flex justify-between text-xs mt-1">
                     <span className="text-gray-400">Planned:</span>
-                    <span className="text-white">{set.pieces[0].planned_location}</span>
+                    <span className="text-white">{set.pieces[0].planned_location} / Cam Pos {set.pieces[0].planned_slot}</span>
                   </div>
                 </div>
               </div>
@@ -311,12 +384,15 @@ const DraggablePiece = ({ piece, color, viewMode }) => {
     }),
   }));
 
-  const hasMismatch = viewMode === 'current' && piece.current_location !== piece.planned_location;
+  const hasMismatch = viewMode === 'current' && (
+    piece.current_location !== piece.planned_location || 
+    piece.current_slot !== piece.planned_slot
+  );
 
   const typeLabels = {
-    camera: '📷 Camera',
+    camera: '📷 Lens',
     body: '🎥 Body', 
-    tripod: '📐 Tripod'
+    tripod: '📐 Tri'
   };
 
   return (
@@ -325,11 +401,11 @@ const DraggablePiece = ({ piece, color, viewMode }) => {
       style={{ 
         backgroundColor: color,
         opacity: isDragging ? 0.5 : 1,
-        border: hasMismatch ? '5px solid #EF4444' : 'none',
-        boxShadow: hasMismatch ? '0 0 8px rgba(239, 68, 68, 0.4)' : 'none',
+        border: hasMismatch ? '2px solid #EF4444' : 'none',
+        boxShadow: hasMismatch ? '0 0 6px rgba(239, 68, 68, 0.4)' : 'none',
         cursor: 'move'
       }}
-      className="text-white text-sm px-2 py-1 rounded-lg hover:opacity-80 transition-opacity"
+      className="text-white text-[10px] px-1 py-0.5 rounded hover:opacity-80 transition-opacity"
     >
       {typeLabels[piece.type]}
     </div>

@@ -42,38 +42,69 @@ function App() {
     }
   };
     
-  const handleDrop = async (item, venueId) => {
-    const mode = viewModeRef.current;
-    
-    try {
-      if (item.setId) {
-        const payload = mode === 'current' 
-          ? { current_location: venueId, planned_location: venueId }
-          : { planned_location: venueId };
+const handleDrop = async (item, venueId, slotNum) => {
+  const mode = viewModeRef.current;
+  
+  try {
+    if (item.setId) {
+      // Only update the field for the current view mode
+      const payload = mode === 'current' 
+        ? { current_location: venueId, current_slot: slotNum }
+        : { planned_location: venueId, planned_slot: slotNum };
 
-        await fetch(`${API_URL}/equipment-set/${item.setId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-      } 
-      else if (item.id) {
-        const payload = mode === 'current'
-          ? { current_location: venueId, planned_location: venueId }
-          : { planned_location: venueId };
+      await fetch(`${API_URL}/equipment-set/${item.setId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } 
+    else if (item.id) {
+      // Only update the field for the current view mode
+      const payload = mode === 'current'
+        ? { current_location: venueId, current_slot: slotNum }
+        : { planned_location: venueId, planned_slot: slotNum };
 
-        await fetch(`${API_URL}/equipment/${item.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-      }
-      
-      await fetchData();
-    } catch (error) {
-      console.error('Error updating equipment:', error);
+      await fetch(`${API_URL}/equipment/${item.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
     }
-  };
+    
+    await fetchData();
+  } catch (error) {
+    console.error('Error updating equipment:', error);
+  }
+};
+
+const handleSyncToPlanned = async () => {
+  if (!confirm('Copy all current locations to planned locations?')) return;
+  
+  try {
+    // Get all equipment
+    const response = await fetch(`${API_URL}/equipment`);
+    const allEquipment = await response.json();
+    
+    // Update each piece
+    for (const piece of allEquipment) {
+      await fetch(`${API_URL}/equipment/${piece.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planned_location: piece.current_location,
+          planned_slot: piece.current_slot
+        })
+      });
+    }
+    
+    await fetchData();
+  } catch (error) {
+    console.error('Error syncing:', error);
+    alert('Error syncing locations');
+  }
+};
+
+
 
   const handleUndo = async () => {
     try {
@@ -113,6 +144,13 @@ function App() {
               }`}
             >
               Planned Locations
+            </button>
+            {/* NEW SYNC BUTTON */}
+            <button
+              onClick={handleSyncToPlanned}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+            >
+              Sync Planned
             </button>
             <button
               onClick={handleUndo}

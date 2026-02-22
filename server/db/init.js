@@ -18,7 +18,9 @@ db.exec(`
     type TEXT NOT NULL,
     set_id TEXT NOT NULL,
     current_location TEXT NOT NULL,
+    current_slot TEXT DEFAULT 'other',
     planned_location TEXT,
+    planned_slot TEXT DEFAULT 'other',
     notes TEXT,
     color TEXT NOT NULL,
     ip_address TEXT,
@@ -47,13 +49,13 @@ db.exec(`
 
 // Initialize venues
 const venues = [
-  { id: 'kyle_field', name: 'Kyle Field', x: 82, y: 25, isHome: 0 },
-  { id: 'reed_arena', name: 'Reed Arena', x: 30, y: 25, isHome: 0 },
-  { id: 'engineering_garage', name: 'Engineering Garage', x: 95, y: 60, isHome: 1 },
-  { id: 'bluebell_park', name: 'Bluebell Park', x: 70, y: 50, isHome: 0 },
+  { id: 'kyle_field', name: 'Kyle Field', x: 81, y: 40, isHome: 0 },
+  { id: 'reed_arena', name: 'Reed Arena', x: 30, y: 50, isHome: 0 },
+  { id: 'engineering_garage', name: 'Engineering Garage', x: 93, y: 65, isHome: 1 },
+  { id: 'bluebell_park', name: 'Bluebell Park', x: 68, y: 50, isHome: 0 },
   { id: 'indoor_track_field', name: 'Indoor Track Field', x: 55, y: 67, isHome: 0 },
   { id: 'outdoor_track_field', name: 'Outdoor Track Field', x: 18, y: 65, isHome: 0 },
-  { id: 'ellis_soccer_field', name: 'Ellis Soccer Field', x: 42, y: 50, isHome: 0 },
+  { id: 'ellis_soccer_field', name: 'Ellis Soccer Field', x: 43, y: 50, isHome: 0 },
   { id: 'davis_diamond', name: 'Davis Diamond', x: 6, y: 50, isHome: 0 }
 ];
 
@@ -65,38 +67,38 @@ const insertVenue = db.prepare(`
 venues.forEach(v => insertVenue.run(v.id, v.name, v.x, v.y, v.isHome));
 
 // Initialize equipment sets A-M
+// Initialize equipment sets A-M + WX1-WX5
 const colors = {
-  A: '#2563EB', // Blue
-  B: '#059669', // Green
-  C: '#7C3AED', // Purple
-  D: '#0891B2', // Cyan
-  E: '#4F46E5', // Indigo
-  F: '#0D9488', // Teal
-  G: '#1D4ED8', // Dark Blue
-  H: '#047857', // Dark Green
-  I: '#6366F1', // Slate Blue
-  J: '#0E7490', // Dark Cyan
-  K: '#6D28D9', // Deep Purple
-  L: '#155E75', // Deep Teal
-  M: '#1E40AF'  // Navy Blue
+  A: '#500000', B: '#500000', C: '#500000', D: '#500000',
+  E: '#500000', F: '#500000', G: '#500000', H: '#500000',
+  I: '#500000', J: '#500000', K: '#500000', L: '#500000', M: '#500000', N: '#500000',
+  WX1: '#3E3E3E', // Red
+  WX2: '#3E3E3E', // Orange  
+  WX3: '#3E3E3E', // Amber
+  WX4: '#3E3E3E', // Yellow
+  WX5: '#3E3E3E'  // Lime
 };
 
 const types = ['camera', 'body', 'tripod'];
 const sets = Object.keys(colors);
 
 const insertEquipment = db.prepare(`
-  INSERT OR IGNORE INTO equipment (id, name, type, set_id, current_location, planned_location, color)
-  VALUES (?, ?, ?, ?, ?, ?, ?)
+  INSERT OR IGNORE INTO equipment (id, name, type, set_id, current_location, current_slot, planned_location, planned_slot, color)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 sets.forEach(setId => {
   types.forEach(type => {
     const id = `${type}_${setId.toLowerCase()}`;
     const name = `${type.charAt(0).toUpperCase() + type.slice(1)} ${setId}`;
-    insertEquipment.run(id, name, type, setId, 'engineering_garage', 'engineering_garage', colors[setId]);
+    insertEquipment.run(
+      id, name, type, setId, 
+      'engineering_garage', 'other',
+      'engineering_garage', 'other',
+      colors[setId]
+    );
   });
 });
-
 console.log('✅ Database initialized successfully');
 
 export default db;

@@ -31,7 +31,7 @@ router.put('/equipment/:id', (req, res) => {
   
   try {
     const { id } = req.params;
-    const { current_location, planned_location, notes, ip_address, serial_number } = req.body;
+    const { current_location, current_slot, planned_location, planned_slot, notes, ip_address, serial_number } = req.body;
     
     const current = db.prepare('SELECT * FROM equipment WHERE id = ?').get(id);
     
@@ -65,9 +65,17 @@ router.put('/equipment/:id', (req, res) => {
       updates.push('current_location = ?');
       values.push(current_location);
     }
+    if (current_slot !== undefined) {
+      updates.push('current_slot = ?');
+      values.push(current_slot);
+    }
     if (planned_location !== undefined) {
       updates.push('planned_location = ?');
       values.push(planned_location);
+    }
+    if (planned_slot !== undefined) {
+      updates.push('planned_slot = ?');
+      values.push(planned_slot);
     }
     if (notes !== undefined) {
       updates.push('notes = ?');
@@ -82,6 +90,10 @@ router.put('/equipment/:id', (req, res) => {
       values.push(serial_number);
     }
     
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No updates provided' });
+    }
+
     updates.push("last_modified = strftime('%s', 'now')");
     values.push(id);
 
@@ -100,6 +112,7 @@ router.put('/equipment/:id', (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 // Update equipment set (all 3 pieces)
 router.put('/equipment-set/:setId', (req, res) => {
   console.log('=== EQUIPMENT SET UPDATE ===');
@@ -108,7 +121,7 @@ router.put('/equipment-set/:setId', (req, res) => {
   
   try {
     const { setId } = req.params;
-    const { current_location, planned_location } = req.body;
+    const { current_location, current_slot, planned_location, planned_slot } = req.body;
     
     // Get current state before update for logging
     const currentState = db.prepare('SELECT * FROM equipment WHERE set_id = ?').all(setId.toUpperCase());
@@ -130,6 +143,11 @@ router.put('/equipment-set/:setId', (req, res) => {
         }
       });
     }
+
+    if (current_slot !== undefined) {
+      updates.push('current_slot = ?');
+      values.push(current_slot);
+    }
     
     if (planned_location !== undefined) {
       updates.push('planned_location = ?');
@@ -143,6 +161,11 @@ router.put('/equipment-set/:setId', (req, res) => {
           `).run(piece.id, 'planned_set', piece.planned_location, planned_location, 'planned_location');
         }
       });
+    }
+
+    if (planned_slot !== undefined) {
+      updates.push('planned_slot = ?');
+      values.push(planned_slot);
     }
     
     if (updates.length === 0) {
@@ -186,10 +209,9 @@ router.get('/history', (req, res) => {
   }
 });
 
-// Undo last change - IMPROVED VERSION
+// Undo last change
 router.post('/undo', (req, res) => {
   try {
-    // Get the most recent change
     const lastChange = db.prepare(`
       SELECT * FROM change_log 
       ORDER BY timestamp DESC 
@@ -207,11 +229,9 @@ router.post('/undo', (req, res) => {
     
     // Check if this was a set move
     if (lastChange.action === 'moved_set' || lastChange.action === 'planned_set') {
-      // Get the set_id from the equipment
       const equipment = db.prepare('SELECT set_id FROM equipment WHERE id = ?').get(lastChange.equipment_id);
       
       if (equipment) {
-        // Get all changes for this set at the same timestamp
         const setChanges = db.prepare(`
           SELECT * FROM change_log 
           WHERE timestamp = ? AND action = ?
@@ -219,7 +239,6 @@ router.post('/undo', (req, res) => {
 
         console.log('Undoing set move, reverting', setChanges.length, 'pieces');
 
-        // Revert each piece
         setChanges.forEach(change => {
           db.prepare(`
             UPDATE equipment 
@@ -228,7 +247,6 @@ router.post('/undo', (req, res) => {
           `).run(change.from_location, change.equipment_id);
         });
 
-        // Delete all the set change logs
         db.prepare(`
           DELETE FROM change_log 
           WHERE timestamp = ? AND action = ?
@@ -248,7 +266,6 @@ router.post('/undo', (req, res) => {
       WHERE id = ?
     `).run(lastChange.from_location, lastChange.equipment_id);
 
-    // Delete the log entry
     db.prepare('DELETE FROM change_log WHERE id = ?').run(lastChange.id);
 
     const updated = db.prepare('SELECT * FROM equipment WHERE id = ?').get(lastChange.equipment_id);
@@ -260,4 +277,5 @@ router.post('/undo', (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 export default router;
