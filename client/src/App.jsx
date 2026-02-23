@@ -125,39 +125,33 @@ const handleSyncToPlanned = async () => {
       <header className="mb-6">
         <h1 className="text-3xl font-bold text-white mb-4">12th Man Productions Camera Tracker</h1>
           <div className="flex gap-4">
-            <button
-              onClick={() => setViewMode('current')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                viewMode === 'current' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              Current Locations
-            </button>
-            <button
-              onClick={() => setViewMode('planned')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                viewMode === 'planned' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              Planned Locations
-            </button>
-            {/* NEW SYNC BUTTON */}
-            <button
-              onClick={handleSyncToPlanned}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-            >
-              Sync Planned
-            </button>
-            <button
-              onClick={handleUndo}
-              className="ml-auto px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
-            >
-              ↶ Undo Last Change
-            </button>
+          <button
+            onClick={() => setViewMode('current')}
+            className={`px-2 py-2 rounded-md font-semibold transition ${
+              viewMode === 'current' 
+                ? 'bg-white text-[#500000] ' 
+                : 'bg-[#500000] text-white hover:bg-[#600000]'
+            }`}
+          >
+            Current Locations
+          </button>
+          <button
+            onClick={() => setViewMode('planned')}
+            className={`px-2 py-2 rounded-md font-semibold transition ${
+              viewMode === 'planned' 
+                ? 'bg-white text-[#500000]' 
+                : 'bg-[#500000] text-white hover:bg-[#600000]'
+            }`}
+          >
+            Planned Locations
+          </button>
+          {/* SYNC BUTTON - Keep purple or also maroon? */}
+          <button
+            onClick={handleSyncToPlanned}
+            className="px-4 py-2 bg-[#500000] text-white rounded-lg hover:bg-[#600000] transition"
+          >
+            Sync Planned
+          </button>
           </div>
         </header>
 

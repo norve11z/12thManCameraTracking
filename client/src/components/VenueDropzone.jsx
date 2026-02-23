@@ -170,7 +170,7 @@ const EquipmentSetBlock = ({ set, viewMode }) => {
         ref={dragSet}
         style={{ 
           backgroundColor: set.color,
-          border: hasMismatch ? '3px solid #EF4444' : 'none',
+          border: hasMismatch ? '3px solid #EF4444' : '0.5px solid #FFFFFF',
           boxShadow: hasMismatch ? '0 0 8px rgba(239, 68, 68, 0.4)' : 'none',
           opacity: isDragging ? 0.5 : 1,
           cursor: 'move',
