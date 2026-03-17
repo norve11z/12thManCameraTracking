@@ -240,7 +240,7 @@ const InfoPopup = ({ set, onClose, viewMode }) => {
     
     try {
       for (const piece of set.pieces) {
-        await fetch(`http://localhost:3001/api/equipment/${piece.id}`, {
+        await fetch(`https://one2thmancameratracking.onrender.com/api/equipment/${piece.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
