@@ -29,3 +29,4 @@ Thumbs.db
 # Optional: if client and server both have node_modules
 client/node_modules/
 server/node_modules/
+server/db/database.sqlite
