@@ -3,7 +3,7 @@ import cors from 'cors';
 import equipmentRoutes from './routes/equipment.js';
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
